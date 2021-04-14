@@ -172,40 +172,38 @@ public class FinalProject {
     }
 
     /**
-     * This method creates the orderform with the details of the fulfilled order
-     * which includes the price and cheapest combination of items from the database,
-     * called "orderform.txt" according to the parameters provided, in accordance
-     * with the format mentioned in the project handout, with added functionality in
-     * case the price is a decimal value. It also outputs a purchase message
-     * containing the IDs and the price to the terminal
+     * This method creates the orderform with the details of the fulfilled order which includes the price and cheapest combination of items from the database,
+     * called "orderform.txt" according to the parameters provided, in accordance with the format mentioned in the project handout, with added functionality in case the price is a decimal value.
+     * It also outputs a purchase message containing the IDs and the price to the terminal
      * 
-     * @param type        The type of furniture requested
-     * @param category    The name of the table from the database
-     * @param item        Number of furnitures requested
-     * @param itemIdPrice String array which contains the ItemIDs of the cheapest
-     *                    combination and the total price
+     * @param type The type of furniture requested
+     * @param category The name of the table from the database
+     * @param item Number of furnitures requested
+     * @param itemIdPrice String array which contains the ItemIDs of the cheapest combination and the total price
      * @throws IOException
      */
-    public void fileControl(String type, String category, int item, String[] itemIdPrice) throws IOException {
-        // Creates a .txt file called orderform
+    public void fileControl(String type, String category,
+    int item, String[] itemIdPrice) throws IOException{
+        //Creates a .txt file called orderform
         File outputFile = new File("orderform.txt");
         FileWriter output = new FileWriter(outputFile);
 
-        // Used to seperate the IDs into their own String[]
-        String[] itemID = new String[itemIdPrice.length - 1];
-        for (int x = 0; x < itemID.length; x++) {
+        //Used to seperate the IDs into their own String[]
+        String[] itemID = new String[itemIdPrice.length-1];
+        for(int x = 0; x < itemID.length; x++){
             itemID[x] = itemIdPrice[x];
         }
 
-        // Used to retrieve the last element of itemIdPrice, which is the total price.
-        double price = Double.valueOf(itemIdPrice[itemIdPrice.length - 1]);
+        //Used to retrieve the last element of itemIdPrice, which is the total price.
+        double price = Double.valueOf(itemIdPrice[itemIdPrice.length-1]);
 
-        // Used to fill in the order form, according to the values provided.
+        //Used to fill in the order form, according to the values provided.
         output.write("Furniture Order Form\n\nFaculty Name:\nContact:\nDate\n\n");
-        output.write("Original Request: " + type.toLowerCase() + " " + category.toLowerCase() + ", " + item + "\n");
+        output.write("Original Request: " + type.toLowerCase() +
+         " " + category.toLowerCase()  + ", " + item + "\n");
         output.write("\nItems Ordered\n");
 
-        for (int x = 0; x < itemID.length; x++) {
+        for(int x = 0; x < itemID.length; x++){
             output.write("ID: " + itemID[x] + "\n");
         }
 
@@ -215,19 +213,23 @@ public class FinalProject {
 
         output.close();
 
-        // Used to output the purchase message into the terminal
+        //Used to output the purchase message into the terminal
         StringBuilder sb = new StringBuilder("\nPurchase ");
 
-        for (int x = 0; x < itemID.length - 1; x++) {
-            sb.append(itemID[x] + ", ");
+        if(itemID.length == 1){
+            sb.append(itemID[0] + " for $" + price);
+        } else {
+            for(int x = 0; x < itemID.length-1; x++){
+                sb.append(itemID[x] + ", ");
+            }
+    
+            sb.deleteCharAt(sb.length()-1);
+            sb.deleteCharAt(sb.length()-1);
+            sb.append(" and " + itemID[itemID.length-1] + " for $" + price);
         }
-
-        sb.deleteCharAt(sb.length() - 1);
-        sb.deleteCharAt(sb.length() - 1);
-        sb.append(" and " + itemID[itemID.length - 1] + " for $" + price);
-
+        
         System.out.println(sb.toString());
-
+    
         return;
     }
 
