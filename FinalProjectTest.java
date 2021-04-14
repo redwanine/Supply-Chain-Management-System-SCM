@@ -26,8 +26,8 @@ import java.util.*;
  */
 public class FinalProjectTest {
 
-  public final static String USERNAME = "root";
-  public final static String PASSWORD = "toor";
+  public final static String USERNAME = "scm";
+  public final static String PASSWORD = "ensf409";
   public final static String DBURL = "jdbc:mysql://localhost/inventory";
   private Connection dbConnect;
   
