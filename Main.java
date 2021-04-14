@@ -88,7 +88,7 @@ How to compile and run our program:
 
 public class Main{
     public static void main(String[] args) throws IOException{
-        FinalProject myJDBC = new FinalProject("jdbc:mysql://localhost/inventory","ensf409","scm");
+        FinalProject myJDBC = new FinalProject("jdbc:mysql://localhost/inventory","scm","ensf409");
         
         //Used to establish connection between program and database
         boolean z = myJDBC.initializeConnection();
