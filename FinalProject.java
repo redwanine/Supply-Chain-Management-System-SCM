@@ -405,5 +405,392 @@ public class FinalProject {
         return myArray;
 
     }
+    
+     /**
+     * This method deletes the records from the database, the IDs of which correspond to the IDs provided in the myArray[] parameter. 
+     * @param myArray String array containing IDs of the records to be deleted from the database and the price of the cheapest combination
+     * @param category The name of the table from the database
+     */
+    public void deleteRecord(String[] myArray, String category){
+        //Used to put all the IDs from myArray into a String[]. Essentially getting rid of the price.
+        String[] itemID = new String[myArray.length-1];
+        for(int x = 0; x < itemID.length; x++){
+            itemID[x] = myArray[x];
+        }
 
+        //Used to loop through itemID and delete the record from the database corresponding to the IDs.
+        for(int x = 0; x < itemID.length; x++){
+
+            String queryString = "DELETE FROM " + category + " WHERE ID = '" + itemID[x] + "'";
+
+            try{
+                Statement myStmt = dbConnect.createStatement();
+                myStmt.executeUpdate(queryString);
+    
+                myStmt.close();
+            } catch(SQLException ex){
+                ex.printStackTrace();
+            }
+        }
+
+        return;
+
+    }
+
+    /**
+     * Returns a string containing a message and names of the manufacturers which produce furniture of a certain category(table). This string is initially printed to the terminal.
+     * This method is called when an order cannot be filled.
+     * @param category The name of the table from the database
+     * @return String containing a message and names of manufacturers
+     */
+    public String orderUnfilled(String category){
+
+        //ArrayList manuNames is used to store the names of all the manufacturers of a certain category of furniture.
+        List<String> manuNames = new ArrayList<String>();
+
+        if(category.toLowerCase().equals("chair")){
+            manuNames = new ArrayList<String>(Arrays.asList(getChairManufacturers()));
+        } else if(category.toLowerCase().equals("desk")){
+            manuNames = new ArrayList<String>(Arrays.asList(getDeskManufacturers()));
+        } else if(category.toLowerCase().equals("lamp")){
+            manuNames = new ArrayList<String>(Arrays.asList(getLampManufacturers()));
+        } else if(category.toLowerCase().equals("filing")){
+            manuNames = new ArrayList<String>(Arrays.asList(getFilingManufacturers()));
+        }
+        
+        //StringBuilder sb is used to form a String containing a message telling that the order cannot be filled.
+        //Moreover, manuNames is looped through and added to sb.
+        StringBuilder sb = new StringBuilder();
+        sb.append("Order cannot be fulfilled based on current inventory. Suggested manufacturers are ");
+        for(int x  = 0; x < manuNames.size(); x++){
+            sb.append(manuNames.get(x) + ", ");
+        }
+        sb.deleteCharAt(sb.length()-1);
+        sb.deleteCharAt(sb.length()-1);
+        sb.append(".");
+
+        //String tempString is created from sb and is printed to the terminal and returned.
+        
+        String tempString = sb.toString();
+        System.out.println(tempString);
+        return tempString;
+    }
+
+    /**
+     * Returns a boolean value of true if all the elements in the paramater flagArray[][] are 1s, otherwise returns 0.
+     * This method is used by calculation() method in order to figure out if enough items have been picked to fill an order.
+     * @param flagArray int[][] which is tested by the method to find out if all the 
+     * @return boolean value of of true if all elements are 1, otherwise 0.
+     */
+    public boolean areAllOne(int[][] flagArray) {
+        
+        //Loop through flagArray[][] to check if all elements are not 1.
+        //If true, returns false, otherwise returns true.
+        int expectedFlag = 1;
+      
+        for (int[] flags: flagArray){
+          for (int flag: flags){
+            if(flag != expectedFlag){
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+    /**
+     * Returns a String[] containing the IDs of the cheapest combination of items to fill an order, along with the total price if the whole order can be filled.
+     * Otherwise return a String[] of length 0.
+     * First the method checks if the length of myArray[][] is 
+     * @param myArray String[][] containing data pulled by databasetoArray()
+     * @param numFur Number of furnitures requested
+     * @return String[] containing IDs of cheapest combination to fill an order and the total price.
+     */
+    public String[] calculation(String[][] myArray, int numFur){
+
+        //Tests if the length of myArray[][] is 0, returns a String[] of length 0 if true.
+        if(myArray.length == 0){
+            String[] returnString = new String[0];
+            return returnString;
+        }
+
+        ArrayList<String> IDs = new ArrayList<String>();
+        ArrayList<String> combinationArray = new ArrayList<String>();
+        
+        int numRow = myArray.length;
+        int numCol = myArray[0].length;
+
+        String[] indexArray = new String[numRow];
+       
+        //Used to add the number of row numbers into indexArray
+        for(int x = 0; x < numRow; x++){
+            indexArray[x] = String.valueOf(x);
+        }
+
+        //Used to create and add all the possible combinations for the number of rows and columns in myArray[][] to combinationArray
+        for (int i = 1, max = 1 << indexArray.length; i < max; ++i) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0, k = 1; j < indexArray.length; ++j, k <<= 1){
+                if ((k & i) != 0){
+                    sb.append(indexArray[j] + " ");
+
+                }    
+            }
+            sb.deleteCharAt(sb.length()-1);
+            combinationArray.add(sb.toString());
+        }
+
+        /*
+        Checks if each combination in combinationArray is a viable option by making use of an int[][] flagArray.
+        The element in the flagArray is changed to 1, if the corresponding element in myArray is "Y".
+        StringBuilder sb is used to temporarily store the IDs with "~" used as a delimiter.
+        */
+        for (int i = 0; i < combinationArray.size(); i++){ 
+            int[][] flagArray = new int[numFur][numCol - 2];
+            String[] str = combinationArray.get(i).split(" ");
+            ArrayList<Integer> al = new ArrayList<Integer>();
+            for (int z = 0; z < str.length; z++){
+                al.add(Integer.parseInt(str[z]));
+            }
+            StringBuilder sb = new StringBuilder();
+            if (numCol == 6){
+                for(int s: al){
+                    boolean addFlag = false;
+                    if (myArray[s][1].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][0] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][0] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (myArray[s][2].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][1] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][1] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                    if (myArray[s][3].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][2] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][2] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                    if (myArray[s][4].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][3] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][3] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                }
+            } else if (numCol == 5){
+                for(int s: al){
+                    boolean addFlag = false;
+                    if (myArray[s][1].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][0] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][0] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                    }
+                    if (myArray[s][2].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][1] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][1] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                    if (myArray[s][3].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][2] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][2] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+                }
+            } else if (numCol == 4){
+                for(int s: al){
+                    boolean addFlag = false;
+                    if (myArray[s][1].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][0] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][0] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                    }
+                    if (myArray[s][2].equals("Y")){
+                        for (int x = 0; x < flagArray.length; x++){
+                            if (flagArray[x][1] == 1){
+                                continue;
+                            } else {
+                                flagArray[x][1] = 1;
+                                if (addFlag == false){
+                                    sb.append(myArray[s][0] + "~");
+                                    addFlag = true;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                    }
+
+                }
+            }
+
+            //Test to check if StringBuilder sb is null, which indicates the current combination question is not a viable option
+            if(!sb.toString().equals(null)){
+                //Tests if all elements in flag array is 1, indicating that the current combination fulfills the order. 
+                //This doesn't indiacte that its the cheapest option though.
+                if (areAllOne(flagArray) == true){
+                    //sb is added to IDs arraylist
+                    IDs.add(sb.toString());
+                }
+            }
+           
+                
+        }
+
+        //If the order cannot be fulfilled, the method returns a String[] of length 0.
+        if(IDs.size() == 0){
+            String[] returnString = new String[0];
+            return returnString;
+        }
+
+        //Used to remove duplicate combinations
+        List<String> deduped = IDs.stream().distinct().collect(Collectors.toList());
+
+        ArrayList<Double> priceList = new ArrayList<Double>();
+
+        /*
+        Used to loop through deduped, add and store the prices of all IDs in each index into
+        each index of priceList arrayList.
+        */
+        for(int x = 0; x < deduped.size(); x++){
+            deduped.set(x, deduped.get(x).substring(0, deduped.get(x).length()-1));
+            String[] tempString = deduped.get(x).split("~");
+            double tempPrice = 0;
+            for(int y = 0; y < tempString.length; y++){
+                
+                for(int z = 0; z < myArray.length; z++){
+                    if (myArray[z][0].equals(tempString[y])){
+                        tempPrice += Double.valueOf(myArray[z][myArray[0].length - 1]);
+                    }
+                }
+                
+                
+            }
+            priceList.add(tempPrice);
+        }
+
+        //Used to find the cheapest price in priceList and the corresponding ID(s).
+        int indexOfMinimum = priceList.indexOf(Collections.min(priceList));
+        String[] tempReturnString = deduped.get(indexOfMinimum).split("~");
+        String[] returnString = new String[tempReturnString.length + 1];
+        
+        //Used to store all the ID values for the cheapest combination into returnString[]
+        for(int x = 0; x < tempReturnString.length; x++){
+            returnString[x] = tempReturnString[x];
+        }
+
+        //Used to append the total price of the cheapest combinations to the end of returnString[]
+        returnString[returnString.length - 1] = String.valueOf(Collections.min(priceList));
+
+        return returnString;
+    }
+
+    /**
+     * Returns a boolean value, true if the order is not filled and false if the order is filled
+     * It figures this out by checking the length of calcResults[].
+     * The length of calcResults passed to the method is 0 if there is no possible combination to fill the order
+     * @param category The name of the table from the database
+     * @param type The type of furniture requested
+     * @param item Number of furnitures requested
+     * @param calcResults String[] containing the IDs of the cheapest combination and their total price
+     * @return boolean value, true if the order is not filled and false otherwise.
+     * @throws IOException
+     */
+    public boolean filledUnfilled(String category, String type, int item, String[] calcResults) throws IOException{
+        //Checks if the length of calcResults is 0, if true it indicates that the order cannot be filled so orderUnfilled() is called.
+        //Otherwise deleteRecord() is called, followed by fileControl(). To delete the required records and create the orderform.
+        if(calcResults.length == 0){
+            String x = orderUnfilled(category);
+            return true;
+        } else {
+            deleteRecord(calcResults, category);
+            fileControl(type, category, item, calcResults);
+            return false;
+        }
+    }
 }
+
